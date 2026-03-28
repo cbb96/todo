@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taskflow</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface-hover: #1f1f24;
+    --surface-active: #26262c;
+    --border: #2a2a30;
+    --border-light: #35353d;
+    --text: #e8e6e3;
+    --text-muted: #7a7880;
+    --text-dim: #4e4d52;
+    --accent: #c9a96e;
+    --accent-hover: #d4b87e;
+    --accent-glow: rgba(201, 169, 110, 0.08);
+    --danger: #c45c5c;
+    --danger-hover: #d46a6a;
+    --danger-bg: rgba(196, 92, 92, 0.08);
+    --success: #5c9a6e;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 400px;
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(201, 169, 110, 0.04) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 620px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 48px;
+    animation: fadeDown 0.6s ease;
+  }
+
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 42px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .header h1 span {
+    color: var(--accent);
+  }
+
+  .header p {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 300;
+    letter-spacing: 0.3px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+  }
+
+  .stat {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+  }
+
+  .stat strong {
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+
+  /* Input area */
+  .input-area {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 32px;
+    animation: fadeDown 0.6s ease 0.1s both;
+  }
+
+  .input-area input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+  }
+
+  .input-area input::placeholder {
+    color: var(--text-dim);
+    font-weight: 300;
+  }
+
+  .input-area input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .btn-add {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .btn-add:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-add:active { transform: translateY(0); }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    min-height: 40px;
+    animation: fadeDown 0.6s ease 0.2s both;
+  }
+
+  .toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .select-all-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 0;
+  }
+
+  .select-all-wrap span {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+    user-select: none;
+  }
+
+  .btn-toolbar {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    letter-spacing: 0.3px;
+  }
+
+  .btn-toolbar:hover {
+    border-color: var(--border-light);
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  .btn-danger {
+    color: var(--danger);
+    border-color: rgba(196, 92, 92, 0.2);
+  }
+
+  .btn-danger:hover {
+    background: var(--danger-bg);
+    border-color: rgba(196, 92, 92, 0.35);
+    color: var(--danger-hover);
+  }
+
+  /* Filter tabs */
+  .filters {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    animation: fadeDown 0.6s ease 0.25s both;
+  }
+
+  .filter-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .filter-btn:hover { color: var(--text); }
+  .filter-btn.active {
+    background: var(--surface-active);
+    color: var(--text);
+  }
+
+  /* Task list */
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    transition: all var(--transition);
+    animation: fadeIn 0.35s ease;
+    cursor: default;
+  }
+
+  .task-item:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-light);
+  }
+
+  .task-item.selected {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .task-item.completed .task-text {
+    text-decoration: line-through;
+    color: var(--text-dim);
+  }
+
+  /* Custom checkbox */
+  .checkbox {
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid var(--border-light);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    flex-shrink: 0;
+  }
+
+  .checkbox:hover { border-color: var(--accent); }
+
+  .checkbox.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .checkbox.checked svg { opacity: 1; }
+
+  .checkbox svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+
+  /* Select checkbox (for multi-select) */
+  .select-check {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    flex-shrink: 0;
+  }
+
+  .select-check:hover { border-color: var(--text-muted); }
+
+  .select-check.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .select-check.checked svg { opacity: 1; }
+
+  .select-check svg {
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+
+  .task-text {
+    flex: 1;
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 400;
+    line-height: 1.4;
+    transition: color var(--transition);
+  }
+
+  .task-date {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+
+  .btn-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all var(--transition);
+    flex-shrink: 0;
+  }
+
+  .task-item:hover .btn-delete { opacity: 1; }
+
+  .btn-delete svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-dim);
+    transition: stroke var(--transition);
+  }
+
+  .btn-delete:hover svg { stroke: var(--danger); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 64px 20px;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .empty-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    opacity: 0.15;
+  }
+
+  .empty-state h3 {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .empty-state p {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 300;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.2s ease;
+    padding: 20px;
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 400px;
+    width: 100%;
+    animation: scaleIn 0.25s ease;
+  }
+
+  .modal h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .modal p {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 300;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .btn-modal {
+    padding: 10px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all var(--transition);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+  }
+
+  .btn-modal:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+
+  .btn-modal-danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+  }
+
+  .btn-modal-danger:hover {
+    background: var(--danger-hover);
+    border-color: var(--danger-hover);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface-active);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+
+  .toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .hidden { display: none !important; }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* Task exit animation */
+  .task-item.removing {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease;
+  }
+
+  /* Responsive */
+  @media (max-width: 500px) {
+    body { padding: 24px 16px 60px; }
+    .header h1 { font-size: 32px; }
+    .input-area { flex-direction: column; }
+    .btn-add { padding: 14px; }
+    .stats { gap: 16px; }
+    .toolbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .toolbar-right { width: 100%; justify-content: flex-end; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <h1>Task<span>flow</span></h1>
+    <p>Stay focused. Stay organised.</p>
+    <div class="stats">
+      <div class="stat"><strong id="totalCount">0</strong>Total</div>
+      <div class="stat"><strong id="activeCount">0</strong>Active</div>
+      <div class="stat"><strong id="completedCount">0</strong>Done</div>
+    </div>
+  </header>
+
+  <div class="input-area">
+    <input type="text" id="taskInput" placeholder="What needs to be done?" autofocus>
+    <button class="btn-add" id="addBtn">Add Task</button>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="active">Active</button>
+    <button class="filter-btn" data-filter="completed">Completed</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <label class="select-all-wrap" id="selectAllWrap">
+        <div class="select-check" id="selectAllCheck">
+          <svg viewBox="0 0 12 12" fill="none" stroke="#0e0e10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2 6 5 9 10 3"/>
+          </svg>
+        </div>
+        <span>Select all</span>
+      </label>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn-toolbar btn-danger hidden" id="deleteSelectedBtn">Delete Selected</button>
+      <button class="btn-toolbar btn-danger" id="clearAllBtn">Clear All</button>
+    </div>
+  </div>
+
+  <div class="task-list" id="taskList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Confirm</h3>
+    <p id="modalMessage">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn-modal" id="modalCancel">Cancel</button>
+      <button class="btn-modal btn-modal-danger" id="modalConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'taskflow_tasks';
+  let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  let selectedIds = new Set();
+  let currentFilter = 'all';
+  let modalCallback = null;
+
+  // DOM
+  const taskInput = document.getElementById('taskInput');
+  const addBtn = document.getElementById('addBtn');
+  const taskList = document.getElementById('taskList');
+  const totalCount = document.getElementById('totalCount');
+  const activeCount = document.getElementById('activeCount');
+  const completedCount = document.getElementById('completedCount');
+  const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+  const clearAllBtn = document.getElementById('clearAllBtn');
+  const selectAllCheck = document.getElementById('selectAllCheck');
+  const toast = document.getElementById('toast');
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMessage = document.getElementById('modalMessage');
+  const modalCancel = document.getElementById('modalCancel');
+  const modalConfirm = document.getElementById('modalConfirm');
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function formatDate(ts) {
+    const d = new Date(ts);
+    const day = d.getDate();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${day} ${months[d.getMonth()]}`;
+  }
+
+  function getFilteredTasks() {
+    if (currentFilter === 'active') return tasks.filter(t => !t.completed);
+    if (currentFilter === 'completed') return tasks.filter(t => t.completed);
+    return tasks;
+  }
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 2200);
+  }
+
+  function showModal(title, message, callback) {
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    modalOverlay.classList.remove('hidden');
+    modalCallback = callback;
+  }
+
+  function hideModal() {
+    modalOverlay.classList.add('hidden');
+    modalCallback = null;
+  }
+
+  function updateStats() {
+    totalCount.textContent = tasks.length;
+    activeCount.textContent = tasks.filter(t => !t.completed).length;
+    completedCount.textContent = tasks.filter(t => t.completed).length;
+  }
+
+  function updateToolbar() {
+    if (selectedIds.size > 0) {
+      deleteSelectedBtn.classList.remove('hidden');
+      deleteSelectedBtn.textContent = `Delete Selected (${selectedIds.size})`;
+    } else {
+      deleteSelectedBtn.classList.add('hidden');
+    }
+
+    const filtered = getFilteredTasks();
+    const allSelected = filtered.length > 0 && filtered.every(t => selectedIds.has(t.id));
+    selectAllCheck.classList.toggle('checked', allSelected);
+  }
+
+  function render() {
+    const filtered = getFilteredTasks();
+    updateStats();
+    updateToolbar();
+
+    if (filtered.length === 0) {
+      const msg = currentFilter === 'all'
+        ? 'Add your first task to get started'
+        : currentFilter === 'active'
+        ? 'No active tasks — nice work'
+        : 'No completed tasks yet';
+
+      taskList.innerHTML = `
+        <div class="empty-state">
+          <svg class="empty-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="8" y="6" width="32" height="36" rx="4"/>
+            <line x1="16" y1="16" x2="32" y2="16"/>
+            <line x1="16" y1="24" x2="28" y2="24"/>
+            <line x1="16" y1="32" x2="24" y2="32"/>
+          </svg>
+          <h3>${currentFilter === 'all' ? 'No tasks yet' : currentFilter === 'active' ? 'All clear' : 'Nothing completed'}</h3>
+          <p>${msg}</p>
+        </div>`;
+      return;
+    }
+
+    taskList.innerHTML = filtered.map(task => `
+      <div class="task-item ${task.completed ? 'completed' : ''} ${selectedIds.has(task.id) ? 'selected' : ''}" data-id="${task.id}">
+        <div class="select-check ${selectedIds.has(task.id) ? 'checked' : ''}" data-action="select">
+          <svg viewBox="0 0 12 12" fill="none" stroke="#0e0e10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2 6 5 9 10 3"/>
+          </svg>
+        </div>
+        <div class="checkbox ${task.completed ? 'checked' : ''}" data-action="toggle">
+          <svg viewBox="0 0 12 12" fill="none" stroke="#0e0e10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2 6 5 9 10 3"/>
+          </svg>
+        </div>
+        <span class="task-text">${escapeHtml(task.text)}</span>
+        <span class="task-date">${formatDate(task.created)}</span>
+        <button class="btn-delete" data-action="delete" title="Delete task">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function addTask() {
+    const text = taskInput.value.trim();
+    if (!text) return;
+    tasks.unshift({ id: generateId(), text, completed: false, created: Date.now() });
+    save();
+    taskInput.value = '';
+    render();
+    showToast('Task added');
+  }
+
+  function toggleTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      task.completed = !task.completed;
+      save();
+      render();
+    }
+  }
+
+  function deleteTask(id) {
+    const el = taskList.querySelector(`[data-id="${id}"]`);
+    if (el) {
+      el.classList.add('removing');
+      setTimeout(() => {
+        tasks = tasks.filter(t => t.id !== id);
+        selectedIds.delete(id);
+        save();
+        render();
+        showToast('Task deleted');
+      }, 300);
+    }
+  }
+
+  function toggleSelect(id) {
+    if (selectedIds.has(id)) selectedIds.delete(id);
+    else selectedIds.add(id);
+    render();
+  }
+
+  function toggleSelectAll() {
+    const filtered = getFilteredTasks();
+    const allSelected = filtered.length > 0 && filtered.every(t => selectedIds.has(t.id));
+    if (allSelected) {
+      filtered.forEach(t => selectedIds.delete(t.id));
+    } else {
+      filtered.forEach(t => selectedIds.add(t.id));
+    }
+    render();
+  }
+
+  function deleteSelected() {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    showModal(
+      'Delete Selected',
+      `This will permanently delete ${count} task${count > 1 ? 's' : ''}. This action cannot be undone.`,
+      () => {
+        tasks = tasks.filter(t => !selectedIds.has(t.id));
+        selectedIds.clear();
+        save();
+        render();
+        showToast(`${count} task${count > 1 ? 's' : ''} deleted`);
+      }
+    );
+  }
+
+  function clearAll() {
+    if (tasks.length === 0) return;
+    showModal(
+      'Clear All Data',
+      `This will permanently delete all ${tasks.length} task${tasks.length > 1 ? 's' : ''} and clear all stored data. This cannot be undone.`,
+      () => {
+        tasks = [];
+        selectedIds.clear();
+        localStorage.removeItem(STORAGE_KEY);
+        render();
+        showToast('All data cleared');
+      }
+    );
+  }
+
+  // Events
+  addBtn.addEventListener('click', addTask);
+  taskInput.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+  taskList.addEventListener('click', e => {
+    const item = e.target.closest('.task-item');
+    if (!item) return;
+    const id = item.dataset.id;
+    const actionEl = e.target.closest('[data-action]');
+    if (!actionEl) return;
+    const action = actionEl.dataset.action;
+    if (action === 'toggle') toggleTask(id);
+    else if (action === 'delete') deleteTask(id);
+    else if (action === 'select') toggleSelect(id);
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelector('.filter-btn.active').classList.remove('active');
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      selectedIds.clear();
+      render();
+    });
+  });
+
+  document.getElementById('selectAllWrap').addEventListener('click', toggleSelectAll);
+  deleteSelectedBtn.addEventListener('click', deleteSelected);
+  clearAllBtn.addEventListener('click', clearAll);
+  modalCancel.addEventListener('click', hideModal);
+  modalConfirm.addEventListener('click', () => {
+    if (modalCallback) modalCallback();
+    hideModal();
+  });
+  modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) hideModal(); });
+
+  // Init
+  render();
+</script>
+
+</body>
+</html>
